@@ -571,6 +571,11 @@ svg.donut{transform:rotate(-90deg);}
 </div>
 
 <script>
+// =====================
+// CONFIG API
+// =====================
+const API = 'http://localhost:8000';
+
 const CELLULES=[
   {label:'Trésorerie',cls:'tresorerie'},{label:'Formation',cls:'formation'},{label:'Sponsoring',cls:'sponsoring'},
   {label:'Événement',cls:'evenement'},{label:'Projet',cls:'projet'},{label:'Design',cls:'design'},
@@ -579,69 +584,95 @@ const CELLULES=[
 function celluleClass(c){const f=CELLULES.find(x=>x.label===c);return f?f.cls:'formation';}
 const MOIS_FR=['','Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 
-let DB={
-  membres:[
-    {id:1,nom:'Benali',prenom:'Yassine',niveau:'GIL3',cellule:'Trésorerie',montant:5000,date:'2026-01-15',statut:'Payé'},
-    {id:2,nom:'Cherif',prenom:'Amina',niveau:'GIL2',cellule:'Formation',montant:5000,date:'2026-01-20',statut:'Payé'},
-    {id:3,nom:'Mansouri',prenom:'Riad',niveau:'GIL3',cellule:'Événement',montant:0,date:'',statut:'En attente'},
-    {id:4,nom:'Khelif',prenom:'Sara',niveau:'CP2',cellule:'Sponsoring',montant:5000,date:'2026-02-01',statut:'Payé'},
-    {id:5,nom:'Boudaoud',prenom:'Karim',niveau:'GIL1',cellule:'Projet',montant:0,date:'',statut:'En attente'},
-    {id:6,nom:'Tlemceni',prenom:'Nadia',niveau:'GIL2',cellule:'Design',montant:5000,date:'2026-02-05',statut:'Payé'},
-    {id:7,nom:'Hamadi',prenom:'Sofiane',niveau:'CP1',cellule:'Média',montant:0,date:'',statut:'En attente'},
-    {id:8,nom:'Zeroual',prenom:'Lina',niveau:'GIL3',cellule:'Partenariat',montant:5000,date:'2026-02-10',statut:'Payé'},
-    {id:9,nom:'Aissaoui',prenom:'Walid',niveau:'GIL1',cellule:'Relation Externe',montant:0,date:'',statut:'En attente'},
-    {id:10,nom:'Khaldi',prenom:'Meriem',niveau:'GIL2',cellule:'Business',montant:5000,date:'2026-02-12',statut:'Payé'},
-  ],
-  transactions:[
-    {id:1,type:'Income',date:'2026-02-12',montant:30000,desc:'Cotisation Cellule Trésorerie & Formation'},
-    {id:2,type:'Expense',date:'2026-02-11',montant:8200,desc:'Achat matériel sonorisation'},
-    {id:3,type:'Income',date:'2026-02-10',montant:50000,desc:'Sponsoring AlphaTech'},
-    {id:4,type:'Expense',date:'2026-02-08',montant:1500,desc:'Impression flyers & affiches'},
-    {id:5,type:'Income',date:'2026-02-07',montant:4000,desc:'Cotisation Cellule Business'},
-    {id:6,type:'Income',date:'2026-01-20',montant:10000,desc:'Cotisation Membres Janvier'},
-    {id:7,type:'Expense',date:'2026-01-18',montant:3500,desc:'Achat fournitures bureau'},
-    {id:8,type:'Income',date:'2026-01-10',montant:25000,desc:'Sponsoring Groupe Meridian (avance)'},
-    {id:9,type:'Expense',date:'2025-12-15',montant:12000,desc:'Location salle Gala préparatoire'},
-    {id:10,type:'Income',date:'2025-12-05',montant:20000,desc:'Cotisations Décembre'},
-    {id:11,type:'Expense',date:'2025-11-22',montant:6000,desc:'Impression supports communication'},
-    {id:12,type:'Income',date:'2025-11-15',montant:15000,desc:'Sponsoring partiel StartupX'},
-  ],
-  evenements:[
-    {id:1,nom:'Gala Annuel GIL',date:'2026-03-15',lieu:'Salle Ibn Khaldoun, Alger',statut:'Planifié',
-     postes:[
-       {label:'Location de Salle',montant:60000},
-       {label:'Traiteur / Restauration',montant:50000},
-       {label:'Décoration',montant:20000},
-       {label:'Éclairage',montant:8000},
-       {label:'Sonorisation',montant:15000},
-       {label:'Photographe / Vidéaste',montant:12000},
-       {label:'Invitations & Impression',montant:5000},
-       {label:'Communication / Publicité',montant:10000},
-       {label:'Cadeaux / Trophées',montant:8000},
-       {label:'Transport / Logistique',montant:5000},
-     ]},
-    {id:2,nom:'Séminaire Études',date:'2026-04-05',lieu:'Amphi Principal, Université',statut:'Planifié',
-     postes:[
-       {label:'Location de Salle',montant:15000},
-       {label:'Sonorisation',montant:5000},
-       {label:'Photographe',montant:3000},
-       {label:'Invitations',montant:2000},
-       {label:'Communication',montant:5000},
-       {label:'Intervenant Expert IA',montant:8000},
-     ]},
-  ],
-  sponsors:[
-    {id:1,entreprise:'AlphaTech SPA',responsable:'Benali Hocine',contact:'h.benali@alphatech.dz',montant:50000,eventId:1,statut:'Confirmé'},
-    {id:2,entreprise:'Groupe Meridian',responsable:'Saidi Wafa',contact:'0560-789-012',montant:30000,eventId:2,statut:'Confirmé'},
-    {id:3,entreprise:'StartupX Alger',responsable:'Ould Ali Mourad',contact:'mourad@startupx.dz',montant:15000,eventId:null,statut:'Confirmé'},
-    {id:4,entreprise:'BetaGroup SA',responsable:'Hamidi Rachida',contact:'0770-901-234',montant:0,eventId:null,statut:'En négociation'},
-  ],
-  nextId:{membres:11,transactions:13,evenements:3,sponsors:5}
-};
+// Cache local (chargé depuis l'API)
+let DB={ membres:[], transactions:[], evenements:[], sponsors:[] };
 
 let deleteTarget={type:'',id:0};
 let evTabIndex=0;
-let tempPostes=[];   // [{label, montant}]
+let tempPostes=[];
+
+// =====================
+// API HELPERS
+// =====================
+async function apiFetch(url, options={}){
+  try {
+    const res = await fetch(API+url, {
+      headers:{'Content-Type':'application/json'},
+      ...options
+    });
+    if(!res.ok){
+      const err = await res.json().catch(()=>({}));
+      showToast('Erreur API: '+(err.detail||res.status),'danger');
+      return null;
+    }
+    if(res.status===204) return true;
+    return await res.json();
+  } catch(e){
+    showToast('Impossible de contacter le serveur. Vérifiez que le backend est lancé.','danger');
+    return null;
+  }
+}
+
+// =====================
+// CHARGEMENT DONNÉES
+// =====================
+async function loadAll(){
+  showLoader(true);
+  const [membres, transactions, evenements, sponsors] = await Promise.all([
+    apiFetch('/membres/'),
+    apiFetch('/transactions/'),
+    apiFetch('/evenements/'),
+    apiFetch('/sponsors/'),
+  ]);
+  // Normalisation pour compatibilité avec le reste du code
+  DB.membres = (membres||[]).map(m=>({
+    id: m.id_membre,
+    nom: m.nom,
+    prenom: m.prenom,
+    niveau: m.niveau_etude||'',
+    cellule: m.cellule||'',
+    montant: parseFloat(m.montant_cotisation)||0,
+    date: '',
+    statut: parseFloat(m.montant_cotisation)>0 ? 'Payé' : 'En attente'
+  }));
+  DB.transactions = (transactions||[]).map(t=>({
+    id: t.id_transaction,
+    type: t.type==='income'?'Income':'Expense',
+    date: t.date_transaction,
+    montant: parseFloat(t.montant)||0,
+    desc: t.description||''
+  }));
+  DB.evenements = (evenements||[]).map(e=>({
+    id: e.id_evenement,
+    nom: e.nom,
+    date: e.date_prevue,
+    lieu: e.lieu||'',
+    statut: e.statut||'Planifié',
+    postes: e.budget_activite ? [{label:'Budget global',montant:parseFloat(e.budget_activite)}] : []
+  }));
+  DB.sponsors = (sponsors||[]).map(s=>({
+    id: s.id_sponsor,
+    entreprise: s.nom_entreprise,
+    responsable: s.nom_responsable||'',
+    contact: s.responsable_contact||'',
+    montant: parseFloat(s.montant_accorde)||0,
+    eventId: null,
+    statut: s.statut||'En négociation'
+  }));
+  showLoader(false);
+  renderAll();
+}
+
+function showLoader(on){
+  let el=document.getElementById('global-loader');
+  if(!el){
+    el=document.createElement('div');
+    el.id='global-loader';
+    el.style.cssText='position:fixed;top:0;left:0;right:0;height:3px;background:var(--accent);z-index:9999;transition:opacity .3s;';
+    document.body.appendChild(el);
+  }
+  el.style.opacity=on?'1':'0';
+}
 
 // =====================
 // NAV
@@ -666,8 +697,8 @@ function exportPrint(){window.print();}
 function exportCSV(type){
   let rows=[], filename='export.csv';
   if(type==='membres'||type==='all'){
-    rows=[['#','Nom','Prénom','Niveau','Cellule','Montant DH','Date Paiement','Statut']];
-    DB.membres.forEach(m=>rows.push([m.id,m.nom,m.prenom,m.niveau,m.cellule,m.montant,m.date,m.statut]));
+    rows=[['#','Nom','Prénom','Niveau','Cellule','Montant DH','Statut']];
+    DB.membres.forEach(m=>rows.push([m.id,m.nom,m.prenom,m.niveau,m.cellule,m.montant,m.statut]));
     filename='membres.csv';
   }
   if(type==='transactions'){
@@ -681,15 +712,11 @@ function exportCSV(type){
     filename='evenements.csv';
   }
   if(type==='sponsors'){
-    rows=[['Entreprise','Responsable','Contact','Montant DH','Événement','Statut']];
-    DB.sponsors.forEach(s=>{
-      const ev=DB.evenements.find(e=>e.id===s.eventId);
-      rows.push([s.entreprise,s.responsable,s.contact,s.montant,ev?ev.nom:'Général',s.statut]);
-    });
+    rows=[['Entreprise','Responsable','Contact','Montant DH','Statut']];
+    DB.sponsors.forEach(s=>rows.push([s.entreprise,s.responsable,s.contact,s.montant,s.statut]));
     filename='sponsors.csv';
   }
   if(type==='all'){
-    // summary sheet
     const rev=DB.transactions.filter(t=>t.type==='Income').reduce((s,t)=>s+t.montant,0);
     const dep=DB.transactions.filter(t=>t.type==='Expense').reduce((s,t)=>s+t.montant,0);
     rows.push([]);
@@ -816,14 +843,16 @@ document.querySelectorAll('.modal-overlay').forEach(o=>{o.addEventListener('clic
 // =====================
 // SAVE MEMBRE
 // =====================
-function saveMembre(){
+async function saveMembre(){
   const id=parseInt(getVal('m-id'))||0;
-  const obj={id:id||DB.nextId.membres++,nom:getVal('m-nom'),prenom:getVal('m-prenom'),
-    niveau:getVal('m-niveau'),cellule:getVal('m-cellule'),montant:parseFloat(getVal('m-montant'))||0,
-    date:getVal('m-date'),statut:getVal('m-statut')};
-  if(!obj.nom||!obj.prenom){showToast('Nom et Prénom requis','danger');return;}
-  if(id){const i=DB.membres.findIndex(m=>m.id===id);DB.membres[i]=obj;}else DB.membres.push(obj);
-  closeModal('modal-membre');renderAll();showToast(id?'Membre modifié !':'Membre ajouté !','success');
+  const nom=getVal('m-nom'),prenom=getVal('m-prenom');
+  if(!nom||!prenom){showToast('Nom et Prénom requis','danger');return;}
+  const payload={nom,prenom,niveau_etude:getVal('m-niveau'),cellule:getVal('m-cellule'),montant_cotisation:parseFloat(getVal('m-montant'))||0};
+  const result=id
+    ? await apiFetch(`/membres/${id}`,{method:'PUT',body:JSON.stringify(payload)})
+    : await apiFetch('/membres/',{method:'POST',body:JSON.stringify(payload)});
+  if(!result)return;
+  closeModal('modal-membre');await loadAll();showToast(id?'Membre modifié !':'Membre ajouté !','success');
 }
 
 // =====================
@@ -853,13 +882,17 @@ function filterTx(val){
       <button class="btn btn-danger btn-sm" onclick="askDelete('transactions',${t.id},'cette transaction')">🗑</button>
     </div></td></tr>`).join('');
 }
-function saveTransaction(){
+async function saveTransaction(){
   const id=parseInt(getVal('tx-id'))||0;
-  const obj={id:id||DB.nextId.transactions++,type:getVal('tx-type'),date:getVal('tx-date'),
-    montant:parseFloat(getVal('tx-montant'))||0,desc:getVal('tx-desc')};
-  if(!obj.desc||!obj.montant){showToast('Description et montant requis','danger');return;}
-  if(id){const i=DB.transactions.findIndex(t=>t.id===id);DB.transactions[i]=obj;}else DB.transactions.push(obj);
-  closeModal('modal-transaction');renderAll();showToast(id?'Transaction modifiée !':'Transaction enregistrée !','success');
+  const desc=getVal('tx-desc'),montant=parseFloat(getVal('tx-montant'))||0;
+  if(!desc||!montant){showToast('Description et montant requis','danger');return;}
+  const rawType=getVal('tx-type');
+  const payload={date_transaction:getVal('tx-date'),montant,type:rawType==='Income'?'income':'expense',description:desc};
+  const result=id
+    ? await apiFetch(`/transactions/${id}`,{method:'PUT',body:JSON.stringify(payload)})
+    : await apiFetch('/transactions/',{method:'POST',body:JSON.stringify(payload)});
+  if(!result)return;
+  closeModal('modal-transaction');await loadAll();showToast(id?'Transaction modifiée !':'Transaction enregistrée !','success');
 }
 
 // =====================
@@ -1025,14 +1058,17 @@ function switchTab(i){
   if(i===1){renderPostesLibres();updateEventTotal();}
 }
 
-function saveEvent(){
+async function saveEvent(){
   const id=parseInt(getVal('ev-id'))||0;
-  const obj={id:id||DB.nextId.evenements++,nom:getVal('ev-nom'),date:getVal('ev-date'),
-    lieu:getVal('ev-lieu'),statut:getVal('ev-statut'),
-    postes:[...tempPostes.map(p=>({label:p.label.trim()||'Poste sans nom',montant:p.montant||0}))]};
-  if(!obj.nom){showToast('Nom de l\'événement requis','danger');return;}
-  if(id){const i=DB.evenements.findIndex(e=>e.id===id);DB.evenements[i]=obj;}else DB.evenements.push(obj);
-  closeModal('modal-event');renderAll();showToast(id?'Événement modifié !':'Événement créé !','success');
+  const nom=getVal('ev-nom');
+  if(!nom){showToast("Nom de l'événement requis",'danger');return;}
+  const totalBudget=tempPostes.reduce((s,p)=>s+(p.montant||0),0);
+  const payload={nom,date_prevue:getVal('ev-date'),lieu:getVal('ev-lieu'),statut:getVal('ev-statut'),budget_activite:totalBudget||null,categorie_activite:null};
+  const result=id
+    ? await apiFetch(`/evenements/${id}`,{method:'PUT',body:JSON.stringify(payload)})
+    : await apiFetch('/evenements/',{method:'POST',body:JSON.stringify(payload)});
+  if(!result)return;
+  closeModal('modal-event');await loadAll();showToast(id?'Événement modifié !':'Événement créé !','success');
 }
 
 // =====================
@@ -1057,14 +1093,16 @@ function renderSponsors(){
       </div></td></tr>`;
   }).join('');
 }
-function saveSponsor(){
+async function saveSponsor(){
   const id=parseInt(getVal('sp-id'))||0;
-  const obj={id:id||DB.nextId.sponsors++,entreprise:getVal('sp-entreprise'),responsable:getVal('sp-responsable'),
-    contact:getVal('sp-contact'),montant:parseFloat(getVal('sp-montant'))||0,
-    eventId:parseInt(getVal('sp-event'))||null,statut:getVal('sp-statut')};
-  if(!obj.entreprise){showToast('Nom entreprise requis','danger');return;}
-  if(id){const i=DB.sponsors.findIndex(s=>s.id===id);DB.sponsors[i]=obj;}else DB.sponsors.push(obj);
-  closeModal('modal-sponsor');renderAll();showToast(id?'Sponsor modifié !':'Sponsor ajouté !','success');
+  const entreprise=getVal('sp-entreprise');
+  if(!entreprise){showToast('Nom entreprise requis','danger');return;}
+  const payload={nom_entreprise:entreprise,nom_responsable:getVal('sp-responsable'),responsable_contact:getVal('sp-contact'),montant_accorde:parseFloat(getVal('sp-montant'))||0,statut:getVal('sp-statut')};
+  const result=id
+    ? await apiFetch(`/sponsors/${id}`,{method:'PUT',body:JSON.stringify(payload)})
+    : await apiFetch('/sponsors/',{method:'POST',body:JSON.stringify(payload)});
+  if(!result)return;
+  closeModal('modal-sponsor');await loadAll();showToast(id?'Sponsor modifié !':'Sponsor ajouté !','success');
 }
 
 // =====================
@@ -1075,9 +1113,12 @@ function askDelete(type,id,label){
   document.getElementById('confirm-msg').textContent=`Supprimer "${label}" ? Cette action est irréversible.`;
   document.getElementById('modal-confirm').classList.add('open');
 }
-function confirmDelete(){
-  DB[deleteTarget.type]=DB[deleteTarget.type].filter(x=>x.id!==deleteTarget.id);
-  closeModal('modal-confirm');renderAll();showToast('Élément supprimé.','danger');
+async function confirmDelete(){
+  const {type,id}=deleteTarget;
+  const urlMap={membres:`/membres/${id}`,transactions:`/transactions/${id}`,evenements:`/evenements/${id}`,sponsors:`/sponsors/${id}`};
+  const result=await apiFetch(urlMap[type],{method:'DELETE'});
+  if(result===null)return;
+  closeModal('modal-confirm');await loadAll();showToast('Élément supprimé.','danger');
 }
 
 // =====================
@@ -1094,7 +1135,7 @@ function showToast(msg,type='success'){
   document.body.appendChild(t);setTimeout(()=>t.remove(),3000);
 }
 
-renderAll();
+loadAll();
 </script>
 </body>
 </html>
